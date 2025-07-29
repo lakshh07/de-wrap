@@ -1,6 +1,5 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import React from "react";
 import { ReactTyped } from "react-typed";
 
@@ -13,8 +12,9 @@ const Home = () => {
       <nav className="py-2.5 mx-[5%] text-zinc-950 rounded-xl mt-4 pl-6 flex justify-between items-center">
         <h1 className="text-3xl font-extrabold font-cairo">DeWrap</h1>
 
-        <div className="scale-90">
-          <ConnectButton />
+        <div className="scale-90 flex items-center gap-2">
+          <appkit-network-button />
+          <appkit-button />
         </div>
       </nav>
 
