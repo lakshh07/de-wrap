@@ -7,10 +7,10 @@
       }
     ],
     "paths": {
-      "@/*": ["./app/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/types/*": ["./types/*"],
-      "@/contracts/*": ["./contracts/*"]
+      "@/*": ["./src/app/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/contracts/*": ["./src/contracts/*"]
     }
   },
   "include": [

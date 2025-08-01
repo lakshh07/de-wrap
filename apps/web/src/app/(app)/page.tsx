@@ -1,20 +1,13 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import { IconArrowRight } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { ReactTyped } from "react-typed";
-import { useAccount } from "wagmi";
 
 const Home = () => {
-  const [mounted, setMounted] = useState(false);
-  const { address, isConnected } = useAccount();
   const router = useRouter();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <main className="h-screen w-full bg-zinc-100 bg-[url('/assets/images/grid-bg.png')] bg-center bg-repeat overflow-hidden relative">
@@ -52,19 +45,12 @@ const Home = () => {
             </p>
 
             <div className="flex items-center gap-2 transition-all duration-300">
-              {mounted && (
-                <div className="scale-[97%] mt-8 flex items-center gap-2">
-                  <appkit-button />
-                </div>
-              )}
-              {mounted && isConnected && address && (
-                <Button
-                  className="mt-8 bg-[#7387FF] rounded-full !px-5 text-white hover:bg-[#7387FF]/80"
-                  onClick={() => router.push("/home")}
-                >
-                  Get Started <IconArrowRight />
-                </Button>
-              )}
+              <Button
+                className="mt-8 bg-[#7387FF] rounded-full !px-5 text-white hover:bg-[#7387FF]/80"
+                onClick={() => router.push("/home")}
+              >
+                Get Started <IconArrowRight />
+              </Button>
             </div>
           </div>
         </div>

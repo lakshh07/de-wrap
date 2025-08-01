@@ -1,5 +1,6 @@
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { UserButton } from "@clerk/nextjs";
+import { Separator } from "./ui/separator";
+import { SidebarTrigger } from "./ui/sidebar";
 
 export function SiteHeader({ name }: { name: string }) {
   return (
@@ -11,9 +12,8 @@ export function SiteHeader({ name }: { name: string }) {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <h1 className="text-base font-medium">Good Morning, {name}</h1>
-        <div className="ml-auto relative -right-12 flex items-center gap-2 scale-75">
-          <appkit-network-button />
-          <appkit-button />
+        <div className="ml-auto relative flex items-center gap-2">
+          <UserButton />
         </div>
       </div>
     </header>
