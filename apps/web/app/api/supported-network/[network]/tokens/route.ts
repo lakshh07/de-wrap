@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { network: string } }
+  { params }: { params: Promise<{ network: number }> }
 ) {
-  const { network } = params;
+  const { network } = await params;
 
   const url = getAPIBaseUrl({
     method: "token",
