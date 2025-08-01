@@ -10,7 +10,11 @@
       "@/*": ["./src/app/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/types/*": ["./src/types/*"],
-      "@/contracts/*": ["./src/contracts/*"]
+      "@/contracts/*": ["./src/contracts/*"],
+      "@/schema/*": ["./src/schema/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/utils/*": ["./src/utils/*"]
     }
   },
   "include": [
