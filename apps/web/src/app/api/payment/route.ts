@@ -5,14 +5,15 @@ import db from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const { userId: clerkId } = await auth();
+
+    if (!clerkId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const payouts = await db.payout.findMany({
       where: {
-        userId,
+        user: { clerkId },
       },
       include: {
         invoice: true,
@@ -34,8 +35,9 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const { userId: clerkId } = await auth();
+
+    if (!clerkId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -44,7 +46,7 @@ export async function PUT(req: NextRequest) {
     const payout = await db.payout.findUnique({
       where: {
         id: payload.id,
-        userId,
+        user: { clerkId },
       },
     });
 
@@ -55,7 +57,7 @@ export async function PUT(req: NextRequest) {
     await db.payout.update({
       where: {
         id: payload.id,
-        userId,
+        user: { clerkId },
       },
       data: {
         ...payload,

@@ -4,7 +4,7 @@ export const paymentSchema = z.object({
   id: z.string().min(1, { message: "ID is required" }),
   status: z.enum(["PENDING", "ONGOING", "COMPLETED", "CANCELLED", "FAILED"]),
   amountPaid: z
-    .number()
+    .string()
     .min(1, { message: "Amount paid is required" })
     .optional(),
   sourceToken: z
@@ -12,7 +12,7 @@ export const paymentSchema = z.object({
     .min(1, { message: "Source token is required" })
     .optional(),
   tokenPrice: z
-    .number()
+    .string()
     .min(1, { message: "Token price is required" })
     .optional(),
   sourceChain: z

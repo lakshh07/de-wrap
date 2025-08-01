@@ -183,7 +183,9 @@ const NewInvoice = () => {
         name: invoice.payerName,
         preferredChain: invoice.preferredChain,
         preferredToken: invoice.preferredToken,
-        amount: parseUnits(invoice.amount, selectedToken?.decimals || 18),
+        amount: Number(
+          parseUnits(invoice.amount, selectedToken?.decimals || 18)
+        ).toString(),
         details: invoice.details,
       });
     },
@@ -192,7 +194,8 @@ const NewInvoice = () => {
       toast.success("Invoice completed successfully");
       router.push("/payments/invoices");
     },
-    onError: () => {
+    onError: (e) => {
+      console.log(e);
       toast.error("Failed to complete invoice");
     },
   });
