@@ -20,9 +20,8 @@ import {
   IconCheck,
   IconX,
   IconBan,
-  IconArrowRight,
 } from "@tabler/icons-react";
-import { Payout, PayoutStatus } from "../../types/payout";
+import { Invoice, Payout, PayoutStatus } from "@prisma/client";
 import { TableCellViewer } from "./data-table";
 import {
   DrawerClose,
@@ -34,6 +33,37 @@ import {
 import { Separator } from "./ui/separator";
 import { format } from "date-fns";
 import { formatId } from "@/lib/utils";
+import { useTokenDetails } from "@/hooks/use-token-details";
+import { formatUnits } from "viem";
+
+function TokenCell({
+  token,
+  chain,
+  amount,
+}: {
+  token: string;
+  chain: number;
+  amount?: number;
+}) {
+  const { data: tokenDetails } = useTokenDetails(token, chain);
+
+  if (!token || !chain) {
+    return <div className="text-sm text-muted-foreground">N/A</div>;
+  }
+
+  if (amount) {
+    return (
+      <div className="text-right text-sm">
+        {formatUnits(BigInt(amount || 0), tokenDetails?.decimals || 18)}
+      </div>
+    );
+  }
+  return (
+    <div className="text-sm text-muted-foreground">
+      {tokenDetails && tokenDetails?.symbol}
+    </div>
+  );
+}
 
 function getStatusDisplay(status: PayoutStatus | undefined) {
   if (status === undefined) {
@@ -84,7 +114,7 @@ function getStatusDisplay(status: PayoutStatus | undefined) {
   }
 }
 
-function PayoutDetailView({ item }: { item: Payout }) {
+function PayoutDetailView({ item }: { item: Payout & { invoice: Invoice } }) {
   const statusDisplay = getStatusDisplay(item.status);
 
   return (
@@ -94,7 +124,7 @@ function PayoutDetailView({ item }: { item: Payout }) {
           <div className="flex items-center text-lg">
             <span className="font-medium">Payout Details - </span>
             <span className="text-muted-foreground text-base">
-              {format(new Date(item.createdAt * 1000), "MMM dd, yyyy")}
+              {format(new Date(item.createdAt), "MMM dd, yyyy")}
             </span>
           </div>
           <Badge variant={"outline"} className="text-zinc-600">
@@ -113,27 +143,23 @@ function PayoutDetailView({ item }: { item: Payout }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-3">
               <Label htmlFor="payer">Payer</Label>
-              <Input id="payer" defaultValue={item.payer} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="sender">Sender</Label>
-              <Input id="sender" defaultValue={item.sender} readOnly />
+              <Input id="payer" defaultValue={item.invoice.name} readOnly />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-3">
+              <Label htmlFor="targetChain">Target Chain</Label>
+              {/* <Input
+                  id="targetChain"
+                  defaultValue={item.targetChain?.toString()}
+                  readOnly
+              /> */}
+            </div>
+            <div className="flex flex-col gap-3">
               <Label htmlFor="sourceChain">Source Chain</Label>
               <Input
                 id="sourceChain"
-                defaultValue={item.sourceChain}
-                readOnly
-              />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="targetChain">Target Chain</Label>
-              <Input
-                id="targetChain"
-                defaultValue={item.targetChain}
+                defaultValue={item.sourceChain?.toString()}
                 readOnly
               />
             </div>
@@ -201,7 +227,7 @@ function PayoutDetailView({ item }: { item: Payout }) {
 }
 
 // Payout columns definition
-export const payoutColumns: ColumnDef<Payout>[] = [
+export const payoutColumns: ColumnDef<Payout & { invoice: Invoice }>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -261,11 +287,7 @@ export const payoutColumns: ColumnDef<Payout>[] = [
     cell: ({ row }) => (
       <div className="flex items-center gap-1">
         <span className="text-xs text-muted-foreground">
-          {row.original.sourceChain || "Unknown"}
-        </span>
-        <IconArrowRight className="size-3 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">
-          {row.original.targetChain || "Unknown"}
+          {row.original.direction || "Unknown"}
         </span>
       </div>
     ),
@@ -274,18 +296,22 @@ export const payoutColumns: ColumnDef<Payout>[] = [
     accessorKey: "invoiceAmount",
     header: () => <div className="w-full text-right">Invoice Amount</div>,
     cell: ({ row }) => (
-      <div className="text-right text-sm">
-        {(row.original.invoiceAmount, row.original.sourceToken)}
-      </div>
+      <TokenCell
+        token={row.original.invoice.preferredToken}
+        chain={row.original.invoice.preferredChain}
+        amount={Number(row.original.invoice.amount)}
+      />
     ),
   },
   {
     accessorKey: "amountPaid",
     header: () => <div className="w-full text-right">Amount Paid</div>,
     cell: ({ row }) => (
-      <div className="text-right text-sm">
-        {(row.original.amountPaid, row.original.targetToken)}
-      </div>
+      <TokenCell
+        token={row.original.sourceToken || ""}
+        chain={Number(row.original.sourceChain)}
+        amount={Number(row.original.amountPaid)}
+      />
     ),
   },
   {
@@ -293,9 +319,8 @@ export const payoutColumns: ColumnDef<Payout>[] = [
     header: "Payer",
     cell: ({ row }) => (
       <div className="text-sm">
-        <div className="font-medium">{row.original.payer || "Unknown"}</div>
-        <div className="text-xs text-muted-foreground">
-          {row.original.sender || "Unknown"}
+        <div className="font-medium">
+          {row.original.invoice.name || "Unknown"}
         </div>
       </div>
     ),
@@ -305,7 +330,7 @@ export const payoutColumns: ColumnDef<Payout>[] = [
     header: "Created",
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {format(new Date(row.original.createdAt * 1000), "MMM dd, yyyy")}
+        {format(new Date(row.original.createdAt), "MMM dd, yyyy")}
       </div>
     ),
   },

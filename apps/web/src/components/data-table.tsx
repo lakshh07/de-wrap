@@ -21,23 +21,10 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
-  IconCircleCheckFilled,
-  IconDotsVertical,
-  IconGripVertical,
-  IconLayoutColumns,
-  IconLoader,
-  IconPlus,
-  IconTrendingUp,
-  IconClock,
-  IconCheck,
-  IconX,
-  IconBan,
-  IconArrowRight,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -54,39 +41,11 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
-import { toast } from "sonner";
-import { z } from "zod";
-
-import { useIsMobile } from "../../hooks/use-mobile";
-import { Badge } from "./ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "./ui/button";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "./ui/chart";
-import { Checkbox } from "./ui/checkbox";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "./ui/drawer";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Input } from "./ui/input";
+import { ChartConfig } from "./ui/chart";
+
+import { Drawer, DrawerContent, DrawerTrigger } from "./ui/drawer";
 import { Label } from "./ui/label";
 import {
   Select,
@@ -95,7 +54,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Separator } from "./ui/separator";
 import {
   Table,
   TableBody,
@@ -104,7 +62,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 // Generic DataTable component
 export function DataTable<TData>({

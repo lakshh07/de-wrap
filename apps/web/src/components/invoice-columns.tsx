@@ -8,22 +8,14 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
   IconClock,
   IconCheck,
   IconX,
   IconBan,
-  IconLink,
   IconCopy,
   IconExternalLink,
 } from "@tabler/icons-react";
-import { Invoice, InvoiceStatus } from "../../types/invoice";
+import { Invoice, InvoiceStatus } from "@prisma/client";
 import { TableCellViewer } from "./data-table";
 import {
   DrawerDescription,
@@ -38,6 +30,33 @@ import { formatUnits } from "viem";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useTokenDetails } from "@/hooks/use-token-details";
+
+function TokenCell({
+  token,
+  chain,
+  amount,
+}: {
+  token: string;
+  chain: number;
+  amount?: number;
+}) {
+  const { data: tokenDetails } = useTokenDetails(token, chain);
+
+  if (tokenDetails && amount) {
+    return (
+      <div className="text-right text-sm">
+        {formatUnits(BigInt(amount || 0), tokenDetails?.decimals || 18)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-sm text-muted-foreground">
+      {tokenDetails && tokenDetails?.symbol}
+    </div>
+  );
+}
 
 function getStatusDisplay(status: InvoiceStatus | undefined) {
   if (status === undefined) {
@@ -93,7 +112,7 @@ function InvoiceDetailView({ item }: { item: Invoice }) {
           <div className="flex items-center text-lg">
             <span className="font-medium">Invoice Details - </span>
             <span className="text-muted-foreground text-base">
-              {format(new Date(item.createdAt * 1000), "MMM dd, yyyy")}
+              {format(new Date(item.createdAt), "MMM dd, yyyy")}
             </span>
           </div>
           <Badge variant={"outline"} className="text-zinc-600">
@@ -114,7 +133,7 @@ function InvoiceDetailView({ item }: { item: Invoice }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-3">
               <Label htmlFor="payerName">Payer Name</Label>
-              <Input id="payerName" defaultValue={item.payerName} readOnly />
+              <Input id="payerName" defaultValue={item.name} readOnly />
             </div>
           </div>
 
@@ -123,7 +142,7 @@ function InvoiceDetailView({ item }: { item: Invoice }) {
               <Label htmlFor="targetChain">Target Chain</Label>
               <Input
                 id="targetChain"
-                defaultValue={item.targetChain}
+                defaultValue={item.preferredChain}
                 readOnly
               />
             </div>
@@ -131,7 +150,7 @@ function InvoiceDetailView({ item }: { item: Invoice }) {
               <Label htmlFor="targetToken">Target Token</Label>
               <Input
                 id="targetToken"
-                defaultValue={item.targetToken}
+                defaultValue={item.preferredToken}
                 readOnly
               />
             </div>
@@ -148,7 +167,7 @@ function InvoiceDetailView({ item }: { item: Invoice }) {
 
           <div className="flex flex-col gap-3">
             <Label htmlFor="details">Details</Label>
-            <Input id="details" defaultValue={item.details} readOnly />
+            <Input id="details" defaultValue={item.details || ""} readOnly />
           </div>
         </div>
       </div>
@@ -206,7 +225,7 @@ export const invoiceColumns: ColumnDef<Invoice>[] = [
     header: "Payer",
     cell: ({ row }) => (
       <div className="text-sm">
-        <div className="font-medium">{row.original.payerName || "Unknown"}</div>
+        <div className="font-medium">{row.original.name || "Unknown"}</div>
       </div>
     ),
   },
@@ -228,7 +247,7 @@ export const invoiceColumns: ColumnDef<Invoice>[] = [
     header: "Preferred Chain",
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {getChainInfo(row.original.targetChain).name}
+        {getChainInfo(row.original.preferredChain).name}
       </div>
     ),
   },
@@ -236,21 +255,21 @@ export const invoiceColumns: ColumnDef<Invoice>[] = [
     accessorKey: "targetToken",
     header: "Preferred Token",
     cell: ({ row }) => (
-      <div className="text-sm text-muted-foreground">
-        {row.original.targetTokenSymbol}
-      </div>
+      <TokenCell
+        token={row.original.preferredToken}
+        chain={row.original.preferredChain}
+      />
     ),
   },
   {
     accessorKey: "amount",
     header: () => <div className="w-full text-right">Amount</div>,
     cell: ({ row }) => (
-      <div className="text-right text-sm">
-        {formatUnits(
-          BigInt(row.original.amount),
-          row.original.targetTokenDecimals || 18
-        )}
-      </div>
+      <TokenCell
+        token={row.original.preferredToken}
+        chain={row.original.preferredChain}
+        amount={Number(row.original.amount)}
+      />
     ),
   },
   {
@@ -258,7 +277,7 @@ export const invoiceColumns: ColumnDef<Invoice>[] = [
     header: "CreatedAt",
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {format(new Date(row.original.createdAt * 1000), "MMM dd, yyyy")}
+        {format(new Date(row.original.createdAt), "MMM dd, yyyy")}
       </div>
     ),
   },
