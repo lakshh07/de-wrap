@@ -5,17 +5,9 @@ import { wagmiAdapter } from "@/lib/appkit-config";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 
-export function Providers({
-  children,
-  cookies,
-}: {
-  children: React.ReactNode;
-  cookies: string | null;
-}) {
-  const initialState = cookieToInitialState(
-    wagmiAdapter.wagmiConfig as Config,
-    cookies
-  );
+export function Providers({ children }: { children: React.ReactNode }) {
+  const initialState = cookieToInitialState(wagmiAdapter.wagmiConfig as Config);
+
   const queryClient = new QueryClient();
 
   return (
