@@ -8,9 +8,11 @@ import {
 import { Button } from "./ui/button";
 import { Plus } from "lucide-react";
 import { User } from "@prisma/client";
-import Link from "next/link";
+import { useRouter } from "nextjs-toploader/app";
 
 export function SectionCards({ user }: { user: User }) {
+  const router = useRouter();
+
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card className="@container/card">
@@ -20,11 +22,12 @@ export function SectionCards({ user }: { user: User }) {
             ${Number(user?.totalBalance ?? 0)}
           </CardTitle>
           <CardAction className="flex flex-col items-end gap-2">
-            <Link href="/invoices/new">
-              <Button variant={"outline"}>
-                <Plus /> Create Invoice
-              </Button>
-            </Link>
+            <Button
+              variant={"outline"}
+              onClick={() => router.push("/invoices/new")}
+            >
+              <Plus /> Create Invoice
+            </Button>
           </CardAction>
         </CardHeader>
       </Card>

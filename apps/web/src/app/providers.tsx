@@ -4,6 +4,7 @@ import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
 import { wagmiAdapter } from "@/lib/appkit-config";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
+import NextTopLoader from "nextjs-toploader";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const initialState = cookieToInitialState(wagmiAdapter.wagmiConfig as Config);
@@ -25,6 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       initialState={initialState}
     >
       <QueryClientProvider client={queryClient}>
+        <NextTopLoader showSpinner={false} shadow={false} color="#000000" />
         {children}
         <Toaster position="top-center" richColors theme="light" />
       </QueryClientProvider>

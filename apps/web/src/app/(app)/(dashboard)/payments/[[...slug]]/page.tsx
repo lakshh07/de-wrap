@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { DataTable } from "@/components/data-table";
 import { payoutColumns } from "@/components/payout-columns";
 import { invoiceColumns } from "@/components/invoice-columns";
@@ -71,11 +70,12 @@ const PaymentsPage = ({ params }: PaymentsPageProps) => {
         <div>
           <h1 className="text-2xl font-bold">Payouts</h1>
         </div>
-        <Link href="/invoices/new" className="">
-          <Button className="bg-black text-white hover:bg-gray-800">
-            + Create invoice
-          </Button>
-        </Link>
+        <Button
+          className="bg-black text-white hover:bg-gray-800"
+          onClick={() => router.push("/invoices/new")}
+        >
+          + Create invoice
+        </Button>
       </div>
 
       <Tabs

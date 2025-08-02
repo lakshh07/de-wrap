@@ -35,7 +35,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { IconLoader2 } from "@tabler/icons-react";
 import { parseUnits } from "viem";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 const NewInvoice = () => {
   const [invoice, setInvoice] = useState<{
