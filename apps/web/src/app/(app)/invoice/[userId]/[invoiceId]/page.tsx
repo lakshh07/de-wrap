@@ -826,119 +826,121 @@ export default function PaymentPage({
             </div>
 
             <div className="p-8 bg-[#ffffff33] backdrop-blur-md flex flex-col justify-center">
-              {currentStep !== STEPS.SUCCESS && (
-                <div className="max-w-2xl mx-auto flex flex-col gap-4 justify-center items-center w-full">
-                  {/* Step Indicator */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between">
-                      {steps.map(
-                        (step: (typeof steps)[number], index: number) => {
-                          const currentStepIndex = steps.findIndex(
-                            (s) => s.id === currentStep
-                          );
-                          const isFutureStep = index > currentStepIndex;
-                          return (
-                            <React.Fragment key={step.id}>
-                              <div
-                                className={cn(
-                                  "flex flex-col items-center mx-2",
-                                  isFutureStep &&
-                                    "pointer-events-none opacity-50",
-                                  !isFutureStep && "cursor-pointer"
-                                )}
-                                onClick={() => {
-                                  if (!isFutureStep) setCurrentStep(step.id);
-                                }}
-                              >
+              {currentStep !== STEPS.SUCCESS &&
+                invoice?.status !== "COMPLETED" && (
+                  <div className="max-w-2xl mx-auto flex flex-col gap-4 justify-center items-center w-full">
+                    {/* Step Indicator */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between">
+                        {steps.map(
+                          (step: (typeof steps)[number], index: number) => {
+                            const currentStepIndex = steps.findIndex(
+                              (s) => s.id === currentStep
+                            );
+                            const isFutureStep = index > currentStepIndex;
+                            return (
+                              <React.Fragment key={step.id}>
                                 <div
                                   className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-200",
-                                    step.completed
-                                      ? "bg-green-500 border-green-500 text-white"
-                                      : step.current
-                                        ? "bg-blue-500 border-blue-500 text-white"
-                                        : "bg-gray-100 border-gray-300 text-gray-400"
+                                    "flex flex-col items-center mx-2",
+                                    isFutureStep &&
+                                      "pointer-events-none opacity-50",
+                                    !isFutureStep && "cursor-pointer"
                                   )}
+                                  onClick={() => {
+                                    if (!isFutureStep) setCurrentStep(step.id);
+                                  }}
                                 >
-                                  {step.completed ? (
-                                    <CheckCircle className="w-5 h-5" />
-                                  ) : step.current ? (
-                                    <span className="text-sm font-medium">
-                                      {index + 1}
-                                    </span>
-                                  ) : (
-                                    <Circle className="w-5 h-5" />
-                                  )}
+                                  <div
+                                    className={cn(
+                                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-200",
+                                      step.completed
+                                        ? "bg-green-500 border-green-500 text-white"
+                                        : step.current
+                                          ? "bg-blue-500 border-blue-500 text-white"
+                                          : "bg-gray-100 border-gray-300 text-gray-400"
+                                    )}
+                                  >
+                                    {step.completed ? (
+                                      <CheckCircle className="w-5 h-5" />
+                                    ) : step.current ? (
+                                      <span className="text-sm font-medium">
+                                        {index + 1}
+                                      </span>
+                                    ) : (
+                                      <Circle className="w-5 h-5" />
+                                    )}
+                                  </div>
+                                  <div className="mt-2 text-center">
+                                    <p className="text-xs font-medium text-gray-900">
+                                      {step.title}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {step.description}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="mt-2 text-center">
-                                  <p className="text-xs font-medium text-gray-900">
-                                    {step.title}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {step.description}
-                                  </p>
-                                </div>
-                              </div>
-                            </React.Fragment>
-                          );
+                              </React.Fragment>
+                            );
+                          }
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Step Content */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm w-full">
+                      {renderStepContent()}
+                    </div>
+
+                    <div className="flex items-center gap-4 mt-2">
+                      <Button
+                        variant={"ghost"}
+                        onClick={handlePrevStep}
+                        disabled={currentStep === STEPS.SELECT_CHAIN}
+                      >
+                        <ChevronLeft />
+                      </Button>
+
+                      <Button
+                        variant={"ghost"}
+                        onClick={handleNextStep}
+                        disabled={
+                          (currentStep === STEPS.SELECT_CHAIN &&
+                            !selectedChainId) ||
+                          (currentStep === STEPS.SELECT_TOKEN &&
+                            !selectedToken) ||
+                          (currentStep === STEPS.APPROVE_TOKEN &&
+                            !selectedToken) ||
+                          (currentStep === STEPS.SEND_TRANSACTION &&
+                            !selectedToken)
                         }
-                      )}
+                      >
+                        <ChevronRight />
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Step Content */}
-                  <div className="bg-white rounded-lg p-6 shadow-sm w-full">
-                    {renderStepContent()}
+              {currentStep === STEPS.SUCCESS ||
+                (invoice?.status === "COMPLETED" && (
+                  <div className="space-y-8">
+                    <div className="text-center">
+                      <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-green-600">
+                        Success!
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Your transaction has been completed successfully.
+                      </p>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-sm  text-green-800">
+                        Payment processed successfully. You will receive a
+                        confirmation shortly.
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="flex items-center gap-4 mt-2">
-                    <Button
-                      variant={"ghost"}
-                      onClick={handlePrevStep}
-                      disabled={currentStep === STEPS.SELECT_CHAIN}
-                    >
-                      <ChevronLeft />
-                    </Button>
-
-                    <Button
-                      variant={"ghost"}
-                      onClick={handleNextStep}
-                      disabled={
-                        (currentStep === STEPS.SELECT_CHAIN &&
-                          !selectedChainId) ||
-                        (currentStep === STEPS.SELECT_TOKEN &&
-                          !selectedToken) ||
-                        (currentStep === STEPS.APPROVE_TOKEN &&
-                          !selectedToken) ||
-                        (currentStep === STEPS.SEND_TRANSACTION &&
-                          !selectedToken)
-                      }
-                    >
-                      <ChevronRight />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === STEPS.SUCCESS && (
-                <div className="space-y-8">
-                  <div className="text-center">
-                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-green-600">
-                      Success!
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Your transaction has been completed successfully.
-                    </p>
-                  </div>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p className="text-sm  text-green-800">
-                      Payment processed successfully. You will receive a
-                      confirmation shortly.
-                    </p>
-                  </div>
-                </div>
-              )}
+                ))}
             </div>
           </div>
         </div>
