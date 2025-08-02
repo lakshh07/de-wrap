@@ -1,12 +1,12 @@
-import DeWrapABI from "@/contracts/ABI/DeWrap.json";
+import DeWrapABI from "@/contracts/ABI/DewrapPaymentCollector.json";
 
 export const dewrapContract = {
   address: {
-    1: "0x818eA3862861e82586A4D6E1A78A1a657FC615aa", // Ethereum
+    1: "0xdb88CFC18875e3eD6797de31dfAae31F942231F2", // Ethereum
     11155111: "0x5C17F6359382b80b8Be5F810805F1346435c803e", // Base
     8453: "0x14835B093D320AA5c9806BBC64C17F0F2546D9EE", // Base Sepolia
     84532: "0x14835B093D320AA5c9806BBC64C17F0F2546D9EE", // Base Sepolia
-    137: "0xB1c44c1cB4584f45261A7f45b72fc2d120Ccec80", // Polygon
+    137: "0xaD725d8591faf63318A0b5FAaF73A2aE2f86211d", // Polygon
     84531: "0x14835B093D320AA5c9806BBC64C17F0F2546D9EE", // Arbitrum
     42161: "0x14835B093D320AA5c9806BBC64C17F0F2546D9EE", // Arbitrum Sepolia
   },
