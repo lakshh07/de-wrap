@@ -77,7 +77,6 @@ export function DataTable<TData>({
   pageSize = 10,
   onRowUpdate,
   detailView,
-  showPagination = true,
 }: {
   data: TData[];
   columns: ColumnDef<TData>[];
