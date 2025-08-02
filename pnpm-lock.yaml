@@ -23,6 +23,9 @@ importers:
       '@openzeppelin/contracts':
         specifier: ^5.4.0
         version: 5.4.0
+      solady:
+        specifier: ^0.1.24
+        version: 0.1.24
     devDependencies:
       '@nomicfoundation/hardhat-chai-matchers':
         specifier: ^2.0.0
@@ -5223,6 +5226,9 @@ packages:
   socket.io-parser@4.2.4:
     resolution: {integrity: sha512-/GbIKmo8ioc+NIWIhwdecY0ge+qVBSMdgxGygevmdHj24bsfgtCmcUUcQ5ZzcylGFHsN3k4HB4Cgkl96KVnuew==}
     engines: {node: '>=10.0.0'}
+
+  solady@0.1.24:
+    resolution: {integrity: sha512-uFTtYane4KMn2Tbth+7f8svTOrQ5+SUksFyTA9Vqwffwxak7OduHZxBYxSz34foBGnbsKtleM2FbgiAP1NYB1A==}
 
   solc@0.8.26:
     resolution: {integrity: sha512-yiPQNVf5rBFHwN6SIf3TUUvVAFKcQqmSUFeq+fb6pNRCo0ZCgpYOZDi3BVoezCPIAcKrVYd/qXlBLUP9wVrZ9g==}
@@ -12943,6 +12949,8 @@ snapshots:
       debug: 4.3.7
     transitivePeerDependencies:
       - supports-color
+
+  solady@0.1.24: {}
 
   solc@0.8.26(debug@4.4.1):
     dependencies:
