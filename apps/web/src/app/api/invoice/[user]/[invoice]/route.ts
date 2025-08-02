@@ -79,7 +79,7 @@ export async function PUT(
 
         const currentBalance = currentUser?.totalBalance || "0";
         const newBalance = (
-          parseInt(currentBalance) + parseInt(payload.amountPaidInCents)
+          parseFloat(currentBalance) + parseFloat(payload.amountPaidInCents)
         ).toString();
 
         await tx.user.update({

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, Row } from "@tanstack/react-table";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -32,35 +32,58 @@ import {
 } from "./ui/drawer";
 import { Separator } from "./ui/separator";
 import { format } from "date-fns";
-import { formatId } from "@/lib/utils";
+import { formatId, getChainInfo } from "@/lib/utils";
 import { useTokenDetails } from "@/hooks/use-token-details";
-import { formatUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 
-function TokenCell({
-  token,
-  chain,
-  amount,
-}: {
-  token: string;
-  chain: number;
-  amount?: number;
-}) {
-  const { data: tokenDetails } = useTokenDetails(token, chain);
+function TokenCell({ row }: { row: Row<Payout & { invoice: Invoice }> }) {
+  const { data: tokenDetails } = useTokenDetails(
+    row.original.invoice.preferredToken,
+    row.original.invoice.preferredChain
+  );
 
-  if (!token || !chain) {
-    return <div className="text-sm text-muted-foreground">N/A</div>;
+  if (!tokenDetails) {
+    return <div className="text-sm text-right text-muted-foreground">N/A</div>;
   }
 
-  if (amount) {
+  if (row.original.invoice.amount && tokenDetails) {
     return (
-      <div className="text-right text-sm">
-        {formatUnits(BigInt(amount || 0), tokenDetails?.decimals || 18)}
+      <div className="text-right">
+        <div className="text-right text-sm space-x-1">
+          {formatUnits(
+            BigInt(row.original.invoice.amount),
+            tokenDetails.decimals ?? 18
+          )}{" "}
+          {tokenDetails.symbol}
+        </div>
+        <span className="text-xs text-muted-foreground">
+          ~{row.original.invoice.amountInCents} USD
+        </span>
       </div>
     );
   }
+}
+
+function PaidCell({ row }: { row: Row<Payout & { invoice: Invoice }> }) {
+  const { data: tokenDetails } = useTokenDetails(
+    row.original.sourceToken || "",
+    row.original.sourceChain || 0
+  );
+
+  if (!tokenDetails) {
+    return <div className="text-xs text-right text-muted-foreground">N/A</div>;
+  }
+
   return (
-    <div className="text-sm text-muted-foreground">
-      {tokenDetails && tokenDetails?.symbol}
+    <div className="text-right">
+      <div className="text-right text-sm space-x-1">
+        {Number(row.original.amountPaid).toFixed(2)} {tokenDetails.symbol}
+      </div>
+      {row.original.amountPaidInCents && (
+        <span className="text-xs text-muted-foreground">
+          ~{row.original.amountPaidInCents} USD
+        </span>
+      )}
     </div>
   );
 }
@@ -269,6 +292,17 @@ export const payoutColumns: ColumnDef<Payout & { invoice: Invoice }>[] = [
     enableHiding: false,
   },
   {
+    accessorKey: "payer",
+    header: "Payer",
+    cell: ({ row }) => (
+      <div className="text-sm">
+        <div className="font-medium">
+          {row.original.invoice.name || "Unknown"}
+        </div>
+      </div>
+    ),
+  },
+  {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
@@ -285,51 +319,50 @@ export const payoutColumns: ColumnDef<Payout & { invoice: Invoice }>[] = [
     accessorKey: "direction",
     header: "Direction",
     cell: ({ row }) => (
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-muted-foreground">
-          {row.original.direction || "Unknown"}
-        </span>
+      <span className="text-xs text-muted-foreground">
+        {row.original.direction || "Inbound"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "preferredChain",
+    header: "Preferred Chain",
+    cell: ({ row }) => (
+      <div className="text-sm text-muted-foreground">
+        {getChainInfo(row.original.invoice.preferredChain).name}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "sourceChain",
+    header: "Source Chain",
+    cell: ({ row }) => (
+      <div className="text-sm text-muted-foreground">
+        {row.original.sourceChain ? (
+          getChainInfo(row.original.sourceChain).name
+        ) : (
+          <span className="text-xs text-muted-foreground">N/A</span>
+        )}
       </div>
     ),
   },
   {
     accessorKey: "invoiceAmount",
-    header: () => <div className="w-full text-right">Invoice Amount</div>,
-    cell: ({ row }) => (
-      <TokenCell
-        token={row.original.invoice.preferredToken}
-        chain={row.original.invoice.preferredChain}
-        amount={Number(row.original.invoice.amount)}
-      />
-    ),
+    header: () => <div className="text-right">Invoice Amount</div>,
+    cell: ({ row }) => <TokenCell row={row} />,
   },
   {
     accessorKey: "amountPaid",
-    header: () => <div className="w-full text-right">Amount Paid</div>,
-    cell: ({ row }) => (
-      <TokenCell
-        token={row.original.sourceToken || ""}
-        chain={Number(row.original.sourceChain)}
-        amount={Number(row.original.amountPaid)}
-      />
-    ),
-  },
-  {
-    accessorKey: "payer",
-    header: "Payer",
-    cell: ({ row }) => (
-      <div className="text-sm">
-        <div className="font-medium">
-          {row.original.invoice.name || "Unknown"}
-        </div>
-      </div>
-    ),
+    header: () => <div className="text-right">Amount Paid</div>,
+    cell: ({ row }) => {
+      return <PaidCell row={row} />;
+    },
   },
   {
     accessorKey: "createdAt",
-    header: "Created",
+    header: () => <div className="text-center">Created</div>,
     cell: ({ row }) => (
-      <div className="text-sm text-muted-foreground">
+      <div className="text-sm text-muted-foreground text-center">
         {format(new Date(row.original.createdAt), "MMM dd, yyyy")}
       </div>
     ),

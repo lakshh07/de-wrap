@@ -204,8 +204,9 @@ const NewInvoice = () => {
         name: invoice.payerName,
         preferredChain: invoice.preferredChain,
         preferredToken: invoice.preferredToken,
-        amount: Number(
-          parseUnits(invoice.amount, selectedToken?.decimals || 18)
+        amount: parseUnits(
+          invoice.amount,
+          selectedToken?.decimals || 18
         ).toString(),
         details: invoice.details,
         amountInCents: totalPrice,
