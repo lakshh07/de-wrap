@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { IconLoader2 } from "@tabler/icons-react";
 import { parseUnits } from "viem";
 import { useRouter } from "nextjs-toploader/app";
+import { useTokenPrice } from "@/hooks/use-tokens-price";
 
 const NewInvoice = () => {
   const [invoice, setInvoice] = useState<{
@@ -177,6 +178,26 @@ const NewInvoice = () => {
     enabled: !!selectedChainId,
   });
 
+  const { data: tokenPrice } = useTokenPrice(
+    selectedToken?.address ? [selectedToken.address] : [],
+    selectedChainId || undefined
+  );
+
+  const totalPrice = useMemo(() => {
+    if (!tokenPrice || !selectedToken?.address || !invoice.amount) {
+      return "0.00";
+    }
+
+    const price = tokenPrice[selectedToken.address];
+    if (!price) return "0.00";
+
+    const amount = parseFloat(invoice.amount);
+    if (isNaN(amount)) return "0.00";
+
+    const total = amount * parseFloat(price);
+    return total.toFixed(2);
+  }, [tokenPrice, selectedToken?.address, invoice.amount]);
+
   const { mutate: mutateInvoice, isPending } = useMutation({
     mutationFn: async () => {
       await axios.post("/api/invoice", {
@@ -187,6 +208,7 @@ const NewInvoice = () => {
           parseUnits(invoice.amount, selectedToken?.decimals || 18)
         ).toString(),
         details: invoice.details,
+        amountInCents: totalPrice,
       });
     },
     onSuccess: () => {
@@ -373,16 +395,22 @@ const NewInvoice = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`amount`}>Amount</Label>
-                <Input
-                  id={`amount`}
-                  disabled={isPending}
-                  type="number"
-                  placeholder="0.00"
-                  value={invoice.amount}
-                  onChange={(e) =>
-                    setInvoice({ ...invoice, amount: e.target.value })
-                  }
-                />
+                <div className="relative">
+                  <Input
+                    id={`amount`}
+                    disabled={isPending}
+                    type="number"
+                    placeholder="0.00"
+                    value={invoice.amount}
+                    className="pr-20 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    onChange={(e) =>
+                      setInvoice({ ...invoice, amount: e.target.value })
+                    }
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <p className="text-xs text-gray-500"> ~{totalPrice} USD</p>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="space-y-2">

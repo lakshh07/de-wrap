@@ -42,13 +42,9 @@ function TokenCell({
   amount?: number;
 }) {
   const { data: tokenDetails } = useTokenDetails(token, chain);
-
+  const amt = formatUnits(BigInt(amount || 0), tokenDetails?.decimals || 18);
   if (tokenDetails && amount) {
-    return (
-      <div className="text-right text-sm">
-        {formatUnits(BigInt(amount || 0), tokenDetails?.decimals || 18)}
-      </div>
-    );
+    return <div className="text-right text-sm">{Number(amt).toFixed(2)}</div>;
   }
 
   return (
@@ -270,6 +266,15 @@ export const invoiceColumns: ColumnDef<Invoice>[] = [
         chain={row.original.preferredChain}
         amount={Number(row.original.amount)}
       />
+    ),
+  },
+  {
+    accessorKey: "amountInCents",
+    header: () => <div className="w-full text-right">Amount in USD</div>,
+    cell: ({ row }) => (
+      <div className="text-right text-sm text-muted-foreground">
+        ~{row.original.amountInCents || "0.00"} USD
+      </div>
     ),
   },
   {
