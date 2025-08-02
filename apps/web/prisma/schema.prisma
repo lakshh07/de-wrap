@@ -23,6 +23,7 @@ model User {
 
   invoices Invoice[]
   payouts  Payout[]
+  metrics  UserMetric[]
 }
 
 enum InvoiceStatus {
@@ -79,4 +80,20 @@ model Payout {
 
   @@index([userId])
   @@index([invoiceId])
+}
+
+enum MetricType {
+  BALANCE
+  INVESTMENT
+}
+
+model UserMetric {
+  id        String     @id @default(uuid()) @map("id")
+  userId    String     @map("user_id")
+  type      MetricType @map("type")
+  value     String     @map("value")
+  timestamp DateTime   @default(now()) @map("timestamp")
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@index([userId, type, timestamp])
 }
