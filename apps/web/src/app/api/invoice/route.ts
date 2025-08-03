@@ -15,6 +15,9 @@ export async function GET() {
       where: {
         user: { clerkId },
       },
+      include: {
+        user: { select: { autoSwap: true } },
+      },
     });
 
     if (!invoices) {

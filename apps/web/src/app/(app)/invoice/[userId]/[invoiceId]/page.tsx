@@ -44,13 +44,41 @@ import { formatUnits } from "viem";
 import { Token } from "@/types/token";
 import { useWindowSize } from "react-use";
 import Confetti from "react-confetti";
-import { Invoice, InvoiceStatus, PayoutStatus } from "@prisma/client";
+import { Invoice, User } from "@prisma/client";
 import { Api } from "@/lib/axios";
 import { useTokenDetails } from "@/hooks/use-token-details";
 import PaytmentPageLoading from "./_components/skeleton-loading";
 import { Payout } from "@/schema/invoice";
 import { dewrapContract } from "@/lib/dewrap-contracts";
 import { useTokenPrice } from "@/hooks/use-tokens-price";
+import axios from "axios";
+
+async function generateSignature(
+  walletAddress: string,
+  typedData: any
+): Promise<string> {
+  try {
+    const connector = new AppKitProviderConnector(appKit as any);
+
+    // Create the EIP-712 typed data structures
+    const eip712TypedData = {
+      domain: typedData.domain,
+      types: typedData.types,
+      primaryType: typedData.primaryType || "Order",
+      message: typedData.message,
+    };
+
+    const signature = await connector.signTypedData(
+      walletAddress,
+      eip712TypedData
+    );
+
+    return signature;
+  } catch (error) {
+    console.error("Error generating signature:", error);
+    throw new Error(`Failed to generate signature: ${error}`);
+  }
+}
 
 enum STEPS {
   SELECT_CHAIN = "SELECT_CHAIN",
@@ -81,7 +109,7 @@ export default function PaymentPage({
 
   const { caipNetwork, switchNetwork } = useAppKitNetwork();
   const queryClient = useQueryClient();
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
 
   const {
     writeContract,
@@ -95,7 +123,9 @@ export default function PaymentPage({
   const { data: invoice, isLoading } = useQuery({
     queryKey: ["invoice", userId, invoiceId],
     queryFn: async () => {
-      const res = await Api.get<Invoice>(`/invoice/${userId}/${invoiceId}`);
+      const res = await Api.get<Invoice & { user: User }>(
+        `/invoice/${userId}/${invoiceId}`
+      );
       return res.data;
     },
     enabled: !!userId && !!invoiceId,
@@ -250,7 +280,7 @@ export default function PaymentPage({
         }),
       ]);
       setExecutingOrder(false);
-      // setCurrentStep(STEPS.SUCCESS);
+      setCurrentStep(STEPS.SUCCESS);
     },
     onError: () => {
       setExecutingOrder(false);
@@ -314,9 +344,11 @@ export default function PaymentPage({
         abi: approveABI,
         functionName: "approve",
         args: [
-          dewrapContract.address[
-            selectedChainId as keyof typeof dewrapContract.address
-          ],
+          ...(invoice?.user.autoSwap
+            ? dewrapContract.address[
+                selectedChainId as keyof typeof dewrapContract.address
+              ]
+            : "0x111111125421ca6dc452d289314280a0f8842a65"), // aggregation router v6
           Number(bufferedAmount),
         ],
       });
@@ -328,18 +360,145 @@ export default function PaymentPage({
     }
   };
 
-  const handleSendTransaction = () => {
-    if (!selectedToken?.address || !selectedChainId || !tokenPrice) return;
+  const submit = async () => {
     setExecutingOrder(true);
 
-    // writeContract({
-    //   address: dewrapContract.address[
-    //     selectedChainId as keyof typeof dewrapContract.address
-    //   ] as `0x${string}`,
-    //   abi: dewrapContract.abi,
-    //   functionName: "pay",
-    //   args: [invoice?.id, selectedToken?.address, Number(bufferedAmount)],
-    // });
+    const configg = {
+      srcChain: selectedChainId,
+      dstChain: invoice?.preferredChain,
+      srcTokenAddress: selectedToken?.address,
+      dstTokenAddress: invoice?.preferredToken,
+      amount: Number(bufferedAmount),
+      walletAddress: address as `0x${string}`,
+    };
+
+    try {
+      const res = await fetch("/api/execute", {
+        method: "POST",
+        body: JSON.stringify(configg),
+      });
+
+      const quoteBuildData = await res.json();
+
+      console.log("OrderHash", quoteBuildData.orderHash);
+
+      console.log("Generating signature...");
+      const signature = await generateSignature(configg.walletAddress, {
+        ...quoteBuildData.typedData,
+        message: {
+          ...quoteBuildData.typedData.message,
+          receiver: dewrapContract.address[
+            selectedChainId as keyof typeof dewrapContract.address
+          ] as `0x${string}`,
+        },
+      });
+
+      console.log("Signature generated:", signature);
+
+      const submitOrderBody = {
+        order: {
+          salt: quoteBuildData.typedData.message.salt,
+          makerAsset: quoteBuildData.typedData.message.makerAsset,
+          takerAsset: quoteBuildData.typedData.message.takerAsset,
+          maker: quoteBuildData.typedData.message.maker,
+          receiver: dewrapContract.address[
+            selectedChainId as keyof typeof dewrapContract.address
+          ] as `0x${string}`,
+          makingAmount: quoteBuildData.typedData.message.makingAmount,
+          takingAmount: quoteBuildData.typedData.message.takingAmount,
+          makerTraits: quoteBuildData.typedData.message.makerTraits,
+        },
+        srcChainId: Number(configg.srcChain),
+        signature: signature,
+        extension: quoteBuildData.extension,
+        quoteId: quoteBuildData.quoteId,
+        ...(quoteBuildData.secretHashes.length > 1 && {
+          secretHashes: quoteBuildData.secretHashes,
+        }),
+      };
+
+      console.log("submitOrderBody", submitOrderBody);
+
+      const submitOrderResponse = await axios.post(
+        "/api/submit",
+        submitOrderBody
+      );
+
+      console.log("submitOrderResponse", submitOrderResponse);
+
+      const submitOrderData = submitOrderResponse.status === 200 ? true : false;
+
+      if (submitOrderData) {
+        console.log("Order submitted");
+
+        console.log("Checking order status");
+        const activeOrders = await fetch(`/api/orders?address=${address}`);
+        const activeOrdersData = await activeOrders.json();
+
+        const order = activeOrdersData.find(
+          (order: any) =>
+            order.status === "pending" ||
+            order.order.salt === quoteBuildData.typedData.message.salt
+        );
+
+        console.log("order", order);
+
+        const orderHash = order?.orderHash;
+
+        const intervalId = setInterval(async () => {
+          const orderStatus = await fetch(
+            `/api/orders/status?orderHash=${orderHash}`
+          );
+          const orderStatusData = await orderStatus.json();
+
+          if (orderStatusData.status === "executed") {
+            console.log(`Order is complete. Exiting.`);
+            await handleSendTransaction();
+            clearInterval(intervalId);
+          }
+
+          console.log("orderStatusData", orderStatusData);
+
+          const secretFills = await fetch(
+            `/api/orders/idx?orderHash=${orderHash}`
+          );
+          const secretFillsData = await secretFills.json();
+
+          console.log("secretFillsData", secretFillsData);
+          if (secretFillsData.length > 0) {
+            secretFillsData.forEach(async (fill: any) => {
+              const submitSecret = await axios.post("/api/submit/secret", {
+                secret: quoteBuildData.secretHashes[fill.idx],
+                orderHash: orderHash,
+              });
+
+              const submitSecretData = submitSecret.data;
+
+              console.log("Fill order found", submitSecretData);
+            });
+          }
+
+          console.log("secretFillsData", secretFillsData);
+        }, 5000);
+      }
+
+      console.log("Order submitted", submitOrderData);
+    } catch (err) {
+      console.log("err", err);
+    }
+  };
+
+  const handleSendTransaction = () => {
+    if (!selectedToken?.address || !selectedChainId || !tokenPrice) return;
+
+    writeContract({
+      address: dewrapContract.address[
+        selectedChainId as keyof typeof dewrapContract.address
+      ] as `0x${string}`,
+      abi: dewrapContract.abi,
+      functionName: "pay",
+      args: [invoice?.id, selectedToken?.address, Number(bufferedAmount)],
+    });
 
     setTimeout(() => {
       updateInvoice({
@@ -460,9 +619,7 @@ export default function PaymentPage({
               Choose the network where you want to initiate the transaction
               from.
             </p>
-            <Button onClick={() => handleSendTransaction()}>
-              Send Transaction
-            </Button>
+
             <Select
               value={selectedChainId?.toString()}
               onValueChange={(value) => {
@@ -665,7 +822,7 @@ export default function PaymentPage({
             </div>
             <Button
               className="w-full"
-              onClick={handleSendTransaction}
+              onClick={submit}
               disabled={isWriteContractPending || executingOrder}
             >
               {isWriteContractPending || executingOrder ? (
@@ -761,7 +918,7 @@ export default function PaymentPage({
                         BigInt(Number(invoice?.amount ?? 0)),
                         token?.decimals ?? 18
                       )
-                    ).toFixed(2)}{" "}
+                    ).toFixed(7)}{" "}
                     {token?.symbol}
                     <span className="text-xs pl-1 font-medium text-muted-foreground">
                       (≈
@@ -778,7 +935,7 @@ export default function PaymentPage({
                       </span>
                       <span className="text-sm font-medium">
                         {parseFloat(
-                          (Number(requiredTokenAmount) * 0.96).toFixed(2)
+                          (Number(requiredTokenAmount) * 0.96).toFixed(7)
                         )}{" "}
                         {selectedToken.symbol}
                       </span>
@@ -792,7 +949,7 @@ export default function PaymentPage({
                     <div className="flex justify-between mt-4 border-t pt-4">
                       <span className="text-lg font-semibold">Amount Due</span>
                       <span className="text-lg font-bold text-green-600">
-                        {parseFloat(requiredTokenAmount).toFixed(2)}{" "}
+                        {parseFloat(requiredTokenAmount).toFixed(7)}{" "}
                         {selectedToken.symbol}
                       </span>
                     </div>
@@ -816,7 +973,7 @@ export default function PaymentPage({
                             ),
                             token?.decimals ?? 18
                           )
-                        ).toFixed(2)}{" "}
+                        ).toFixed(7)}{" "}
                         {token?.symbol}
                       </span>
                     </div>
@@ -921,32 +1078,32 @@ export default function PaymentPage({
                   </div>
                 )}
 
-              {currentStep === STEPS.SUCCESS ||
-                (invoice?.status === "COMPLETED" && (
-                  <div className="space-y-8">
-                    <div className="text-center">
-                      <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-green-600">
-                        Success!
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Your transaction has been completed successfully.
-                      </p>
-                    </div>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <p className="text-sm  text-green-800">
-                        Payment processed successfully. You will receive a
-                        confirmation shortly.
-                      </p>
-                    </div>
+              {(currentStep === STEPS.SUCCESS ||
+                invoice?.status === "COMPLETED") && (
+                <div className="space-y-8">
+                  <div className="text-center">
+                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-green-600">
+                      Success!
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Your transaction has been completed successfully.
+                    </p>
                   </div>
-                ))}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm  text-green-800">
+                      Payment processed successfully. You will receive a
+                      confirmation shortly.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {currentStep === STEPS.SUCCESS && (
+      {(currentStep === STEPS.SUCCESS || invoice?.status === "COMPLETED") && (
         <Confetti width={width} height={height} recycle={false} />
       )}
     </main>
