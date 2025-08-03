@@ -1,7 +1,9 @@
 {
-  "functions": {
-    "src/app/api/cron/swap.ts": {
-      "cron": "0 */1 * * *"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cron": [
+    {
+      "path": "/api/cron/swap",
+      "schedule": "0 */2 * * *"
     }
-  }
+  ]
 }
