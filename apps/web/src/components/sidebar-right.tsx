@@ -24,7 +24,6 @@ type PayoutWithInvoice = Payout & {
 export function SidebarRight({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  // Fetch completed payouts
   const { data: payouts } = useQuery({
     queryKey: ["payouts"],
     queryFn: async (): Promise<PayoutWithInvoice[]> => {
@@ -35,7 +34,6 @@ export function SidebarRight({
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Extract unique tokens from completed payouts with price history
   const uniqueTokens = useMemo(() => {
     if (!payouts) return [];
 
@@ -92,11 +90,9 @@ export function SidebarRight({
     return Array.from(tokenMap.values());
   }, [payouts]);
 
-  // Get token addresses for price fetching
   const tokenAddresses = uniqueTokens.map((item) => item.token);
   const { data: tokenPrices } = useTokenPrice(tokenAddresses, 1);
 
-  // Calculate total USD balance and profit
   const { totalUSDBalance, totalProfit } = useMemo(() => {
     if (!tokenPrices) return { totalUSDBalance: 0, totalProfit: 0 };
 
@@ -146,18 +142,20 @@ export function SidebarRight({
             </Button>
           </div>
         </div>
-        <div className="mt-1 flex items-center gap-2">
-          <h3 className="text-sm font-medium">Profit:</h3>
-          <div className="flex items-center gap-2">
+        {totalProfit ? (
+          <div className="mt-1 flex items-center gap-2">
+            <h3 className="text-sm font-medium">Profit:</h3>
             <div className="flex items-center gap-2">
-              <span
-                className={`text-sm font-medium ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}
-              >
-                {totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-sm font-medium ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}
+                >
+                  {totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
       </SidebarHeader>
       <SidebarContent className="pl-2 pr-3.5">
         <div className="space-y-3">
@@ -197,7 +195,6 @@ export function SidebarRight({
   );
 }
 
-// Separate component for token balance item
 function TokenBalanceItem({
   tokenAddress,
   chainId,

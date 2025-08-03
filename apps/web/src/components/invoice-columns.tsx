@@ -44,7 +44,7 @@ function TokenCell({
   const { data: tokenDetails } = useTokenDetails(token, chain);
   const amt = formatUnits(BigInt(amount || 0), tokenDetails?.decimals || 18);
   if (tokenDetails && amount) {
-    return <div className="text-right text-sm">{Number(amt).toFixed(2)}</div>;
+    return <div className="text-right text-sm">{Number(amt).toFixed(8)}</div>;
   }
 
   return (
@@ -97,7 +97,6 @@ function getStatusDisplay(status: InvoiceStatus | undefined) {
   }
 }
 
-// Invoice detail view component
 function InvoiceDetailView({ item }: { item: Invoice }) {
   const statusDisplay = getStatusDisplay(item.status);
 
@@ -174,7 +173,6 @@ function InvoiceDetailView({ item }: { item: Invoice }) {
   );
 }
 
-// Invoice columns definition
 export const invoiceColumns: ColumnDef<Invoice>[] = [
   {
     id: "select",
