@@ -19,6 +19,8 @@ model User {
   totalWithdrawn String?  @map("total_withdrawn")
   preferredToken String?  @map("preferred_token")
   preferredChain Int?     @map("preferred_chain")
+  autoSwap       Boolean  @default(false) @map("auto_swap")
+  onboarded      Boolean  @default(false) @map("onboarded")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
