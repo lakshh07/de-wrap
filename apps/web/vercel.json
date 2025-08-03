@@ -1,8 +1,7 @@
 {
-  "cron": [
-    {
-      "path": "/api/cron/swap",
-      "schedule": "0 */1 * * *"
+  "functions": {
+    "src/app/api/cron/swap.ts": {
+      "cron": "0 */1 * * *"
     }
-  ]
+  }
 }
